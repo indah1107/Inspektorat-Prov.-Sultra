@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Dokumen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4 text-center">Detail Dokumen</h2>
+        
+        <table class="table table-bordered">
+            <tr><th>Nomor Surat</th><td>{{ dokumen.nomor_surat }}</td></tr>
+            <tr><th>Tanggal Surat</th><td>{{ dokumen.tanggal_surat }}</td></tr>
+            <tr><th>Irban</th><td>{{ dokumen.irban }}</td></tr>
+            <tr>
+                <th>Tim Audit</th>
+                <td>
+                    {% if dokumen.tim_audit %}
+                        <ul>
+                            {% for anggota in dokumen.tim_audit %}
+                                <li>{{ anggota.nama }} - {{ anggota.jabatan }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span class="text-muted">Tidak ada Tim Audit</span>
+                    {% endif %}
+                </td>
+            </tr>                        
+            <tr><th>Uraian</th><td>{{ dokumen.uraian }}</td></tr>
+            <tr><th>Nomor Laporan</th><td>{{ laporan.nomor_laporan }}</td></tr>
+            <tr><th>Tanggal Laporan</th><td>{{ laporan.tanggal_laporan }}</td></tr>
+            <tr><th>Keterangan</th><td>{{ laporan.keterangan }}</td></tr>
+            <tr>
+                <th>File Surat Tugas</th>
+                <td>
+                    {% if dokumen.file %}
+                        <a href="{{ dokumen.file.url }}" target="_blank" class="btn btn-success">Lihat</a>
+                    {% else %}
+                        <span class="text-muted">Tidak ada file</span>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <th>File Laporan</th>
+                <td>
+                    {% if laporan and laporan.file %}
+                        <a href="{{ laporan.file.url }}" target="_blank" class="btn btn-primary">Lihat</a>
+                    {% else %}
+                        <span class="text-muted">Tidak ada laporan</span>
+                    {% endif %}
+                </td>
+            </tr>            
+        </table>
+
+        <a href="{% url 'daftar_dokumen' %}" class="btn btn-secondary mt-3">Kembali</a>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

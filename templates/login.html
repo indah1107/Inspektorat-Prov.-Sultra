@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -27,6 +28,9 @@
 <body>
 
     <div class="login-container">
+        <div class="d-flex justify-content-center mb-3">
+            <img src="{% static 'images/logo.png' %}" alt="Logo" height="95">
+        </div>
         <h3>Login</h3>
         <form action="{% url 'login' %}" method="POST">
             {% csrf_token %}
@@ -41,12 +45,13 @@
             <button type="submit" class="btn btn-primary w-100">Login</button>
         
             {% if messages %}
-                <div class="mt-3">
-                    {% for message in messages %}
-                        <div class="alert alert-danger">{{ message }}</div>
-                    {% endfor %}
-                </div>
+                {% for message in messages %}
+                    {% if 'dokumen' in message.tags %}  {# Hanya tampilkan pesan terkait dokumen #}
+                        <div class="alert alert-success">{{ message }}</div>
+                    {% endif %}
+                {% endfor %}
             {% endif %}
+
         </form>
         <p class="text-center mt-3">Belum punya akun? <a href="{% url 'register' %}">Daftar</a></p>
     </div>

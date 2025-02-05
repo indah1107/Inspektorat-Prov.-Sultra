@@ -8,19 +8,26 @@
 </head>
 <body>
     <div class="container mt-5">
-        <h2 class="mb-4">Daftar Dokumen</h2>
+        <h2 class="mb-4 text-center">Daftar Surat Tugas</h2>
 
         <!-- Formulir Pencarian -->
         <form method="GET" class="mb-4">
-            <div class="row">
+            <div class="row g-2">
                 <div class="col-md-3">
                     <input type="text" class="form-control" name="nomor_surat" placeholder="Nomor Surat" value="{{ request.GET.nomor_surat }}">
                 </div>
                 <div class="col-md-3">
-                    <input type="text" class="form-control" name="judul" placeholder="Judul" value="{{ request.GET.judul }}">
+                    <input type="date" class="form-control" name="tanggal_surat" value="{{ request.GET.tanggal_surat }}">
                 </div>
                 <div class="col-md-3">
-                    <input type="text" class="form-control" name="jenis" placeholder="Jenis" value="{{ request.GET.jenis }}">
+                    <select class="form-control" name="irban">
+                        <option value="">Pilih Irban</option>
+                        <option value="IRBAN 1" {% if request.GET.irban == "IRBAN 1" %}selected{% endif %}>IRBAN 1</option>
+                        <option value="IRBAN 2" {% if request.GET.irban == "IRBAN 2" %}selected{% endif %}>IRBAN 2</option>
+                        <option value="IRBAN 3" {% if request.GET.irban == "IRBAN 3" %}selected{% endif %}>IRBAN 3</option>
+                        <option value="IRBAN 4" {% if request.GET.irban == "IRBAN 4" %}selected{% endif %}>IRBAN 4</option>
+                        <option value="IRBAN INVESTIGASI" {% if request.GET.irban == "IRBAN INVESTIGASI" %}selected{% endif %}>IRBAN INVESTIGASI</option>
+                    </select>                    
                 </div>
                 <div class="col-md-3">
                     <button type="submit" class="btn btn-primary w-100">Cari</button>
@@ -28,12 +35,16 @@
             </div>
         </form>
 
-        <table class="table table-striped">
-            <thead>
+        <!-- Tabel Daftar Dokumen -->
+        <table class="table table-bordered table-striped">
+            <thead class="table-dark">
                 <tr>
                     <th>No Surat</th>
-                    <th>Judul</th>
-                    <th>Jenis</th>
+                    <th>Tanggal Surat</th>
+                    <th>Irban</th>
+                    <th>Tim Audit</th>
+                    <th>Laporan</th>
+                    <th>Unduh</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -41,20 +52,81 @@
                 {% for dokumen in dokumen_list %}
                 <tr>
                     <td>{{ dokumen.nomor_surat }}</td>
-                    <td>{{ dokumen.judul }}</td>
-                    <td>{{ dokumen.jenis }}</td>
+                    <td>{{ dokumen.tanggal_surat }}</td>
+                    <td>{{ dokumen.irban }}</td>
                     <td>
-                        <a href="{% url 'unduh_dokumen' dokumen.id %}" class="btn btn-primary">Unduh</a>
+                        {% if dokumen.tim_audit %}
+                            <ul>
+                                {% for anggota in dokumen.tim_audit %}
+                                    <li>{{ anggota.nama }} - {{ anggota.jabatan }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <span class="text-muted">Tidak ada Tim Audit</span>
+                        {% endif %}
+                    </td>                    
+                    <td>
+                        {% if dokumen.laporan and dokumen.laporan.file %}
+                            <span class="badge bg-success">Sudah diunggah</span>
+                        {% else %}
+                            <span class="badge bg-danger">Belum diunggah</span>
+                        {% endif %}
+                    
+                    </td>
+                    <td>
+                        <!-- Tombol Unduh Surat Tugas -->
+                        {% if dokumen.file %}
+                            <a href="{% url 'unduh_surat_tugas' dokumen.id %}" class="btn btn-sm btn-info text-white">Surat Tugas</a>
+                        {% endif %}
+                    
+                        <!-- Tombol Unduh Laporan -->
+                        {% if dokumen.laporan and dokumen.laporan.file %}
+                            <a href="{% url 'unduh_laporan' dokumen.laporan.id %}" class="btn btn-sm btn-success">Laporan</a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'detail_dokumen' dokumen.id %}" class="btn btn-sm btn-primary">Detail</a>
+                        {% if not dokumen.nomor_laporan %}
+                            <a href="{% url 'unggah_laporan' dokumen.id %}" class="btn btn-sm btn-warning text-white">Update</a>
+                        {% endif %}
+
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="4" class="text-center">Belum ada dokumen</td>
+                    <td colspan="6" class="text-center">Belum ada surat tugas</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Kembali</a>
+        <div class="btn-group mb-3">
+            <a href="{% url 'ekspor_excel' 'minggu' %}" class="btn btn-primary m-2">Unduh Excel (Minggu)</a>
+            <a href="{% url 'ekspor_excel' 'bulan' %}" class="btn btn-secondary m-2">Unduh Excel (Bulan)</a>
+            <a href="{% url 'ekspor_excel' 'tahun' %}" class="btn btn-success m-2">Unduh Excel (Tahun)</a>
+        </div>
+        
+        
+        <div class="d-flex justify-content-center mt-3">
+            <nav>
+                <ul class="pagination">
+                    {% if dokumen_list.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?page=1">Awal</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ dokumen_list.previous_page_number }}">Sebelumnya</a></li>
+                    {% endif %}
+        
+                    <li class="page-item disabled"><a class="page-link">Halaman {{ dokumen_list.number }} dari {{ dokumen_list.paginator.num_pages }}</a></li>
+        
+                    {% if dokumen_list.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ dokumen_list.next_page_number }}">Berikutnya</a></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ dokumen_list.paginator.num_pages }}">Akhir</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-2 mb-5">Kembali</a>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
