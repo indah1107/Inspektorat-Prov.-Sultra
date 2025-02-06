@@ -47,6 +47,15 @@
 </head>
 <body>
     <div class="container mt-5">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
         <h3>Unggah Surat Tugas</h3>
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
@@ -87,7 +96,7 @@
 
             <input type="hidden" name="tim_audit" id="tim_audit_input">
             
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mb-5">
                 <button type="submit" class="btn btn-primary">Unggah</button>
                 <a href="{% url 'dashboard' %}" class="btn btn-secondary">Kembali</a>
             </div>

@@ -4,16 +4,22 @@ from django.http import FileResponse, Http404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Dokumen, Laporan
 from .forms import DokumenForm, LaporanForm
+from django.contrib.auth.decorators import login_required
+from django.db import IntegrityError
 import json
 
 # ✅ UNGGAH SURAT TUGAS
 def unggah_dokumen(request):
     if request.method == "POST":
-        print("Data yang dikirim:", request.POST)  # Debug POST data
-        print("Data tim_audit yang dikirim:", request.POST.get("tim_audit"))  # Debug tim_audit
-
         form = DokumenForm(request.POST, request.FILES)
         if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, "Dokumen berhasil diunggah.")
+                return redirect("unggah_dokumen")
+            except IntegrityError:
+                messages.error(request, "Nomor surat sudah digunakan. Gunakan nomor yang berbeda.")
+
             dokumen = form.save(commit=False)
 
             # 🔹 Konversi data tim_audit ke JSON jika dikirim sebagai string JSON
@@ -89,15 +95,20 @@ def daftar_dokumen(request):
     return render(request, "dokumen/daftar_dokumen.html", {"dokumen_list": dokumen_page})
 
 # ✅ MENAMPILKAN DETAIL DOKUMEN
+@login_required
 def detail_dokumen(request, dokumen_id):
     dokumen = get_object_or_404(Dokumen, pk=dokumen_id)
     laporan = Laporan.objects.filter(dokumen=dokumen).first()  # Jika laporan ada
 
     print("Tim Audit yang dikirim ke template:", dokumen.tim_audit)  # Debugging
 
+    # Cek dari mana user datang
+    next_page = request.GET.get("next", request.META.get("HTTP_REFERER", "/"))
+
     return render(request, "dokumen/detail_dokumen.html", {
         "dokumen": dokumen,
-        "laporan": laporan
+        "laporan": laporan,
+        "next_page": next_page,  # Kirim ke template
     })
 
 # ✅ MENGUNDUH SURAT TUGAS
@@ -313,6 +324,45 @@ def update_user(request, user_id):
 
     return render(request, 'dokumen/update_user.html', {'user': user})
 
+def daftar_dokumen_admin(request):
+
+    nomor_surat_query = request.GET.get("nomor_surat", "")
+    tanggal_surat_query = request.GET.get("tanggal_surat", "")
+    irban_query = request.GET.get("irban", "")
+
+    # Filter pencarian
+    dokumen_list = Dokumen.objects.select_related("user", "laporan").all()
+    
+    if nomor_surat_query:
+        dokumen_list = dokumen_list.filter(nomor_surat__icontains=nomor_surat_query)
+    if tanggal_surat_query:
+        dokumen_list = dokumen_list.filter(tanggal_surat=tanggal_surat_query)
+    if irban_query:
+        dokumen_list = dokumen_list.filter(irban__icontains=irban_query)  # ✅ Perbaiki pencarian irban
+
+    # 🔹 Urutkan dokumen terbaru ke atas
+    dokumen_list = dokumen_list.order_by("-tanggal_surat", "-id")
+
+    # 🔹 PAGINASI: Batasi hanya 10 dokumen per halaman
+    paginator = Paginator(dokumen_list, 10)
+    page_number = request.GET.get("page")
+
+    try:
+        dokumen_page = paginator.page(page_number)
+    except (EmptyPage, PageNotAnInteger):
+        dokumen_page = paginator.page(1)  # Jika error, kembali ke halaman pertama
+
+    return render(request, 'dokumen/daftar_dokumen_admin.html', {'dokumen_list': dokumen_list})
+
+def hapus_surat_tugas(request, dokumen_id):
+    dokumen = get_object_or_404(Dokumen, id=dokumen_id)
+    dokumen.delete()
+    return redirect('daftar_dokumen_admin')
+
+def hapus_laporan(request, laporan_id):
+    laporan = get_object_or_404(Laporan, id=laporan_id)
+    laporan.delete()
+    return redirect('daftar_dokumen_admin')
 
 @user_passes_test(is_admin)
 def hapus_dokumen(request, dokumen_id):

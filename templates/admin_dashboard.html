@@ -48,7 +48,7 @@
                         <a class="nav-link" href="{% url 'profil_admin' %}"><i class="bi bi-person-circle"></i> Profil</a>
                     </li>
                     <li class="nav-item me-4">
-                        <a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-person-circle"></i> Sistem</a>
+                        <a class="nav-link" href="{% url 'admin_daftar_dokumen' %}"><i class="bi bi-person-circle"></i> Dokumen</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link text-danger" href="{% url 'logout' %}" onclick="confirmLogout(event)">
@@ -68,59 +68,68 @@
             <a href="{% url 'create_user' %}" class="btn btn-primary mb-3">Buat Akun Baru</a>
         </div>
         <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
+            <table class="table table-bordered">
+                <thead>
                     <tr>
+                        <th>#</th>
+                        <th>Nama Lengkap</th>
                         <th>Username</th>
                         <th>Email</th>
+                        <th>Role</th>
                         <th>Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
                     <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ user.get_full_name }}</td>
                         <td>{{ user.username }}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            <a href="{% url 'hapus_pengguna' user.id %}" class="btn btn-danger btn-sm">Hapus</a>
-                            <a href="{% url 'update_user' user.id %}" class="btn btn-warning btn-sm text-white">Edit</a>
+                            {% if user.is_superuser %}
+                                <span class="badge bg-danger">Super Admin</span>
+                            {% elif user.is_staff %}
+                                <span class="badge bg-warning">Admin</span>
+                            {% else %}
+                                <span class="badge bg-primary">Pengguna</span>
+                            {% endif %}
                         </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center">Tidak ada pengguna terdaftar.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <h3>Daftar Dokumen Anda</h3>
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Nomor Surat</th>
-                        <th>Tanggal Upload</th>
-                        <th>Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for dokumen in dokumen_list %}
-                    <tr>
-                        <td>{{ dokumen.nomor_surat }}</td>
-                        <td>{{ dokumen.tanggal_upload }}</td>
                         <td>
-                            <a href="{% url 'hapus_dokumen' dokumen.id %}" class="btn btn-danger btn-sm">Hapus</a>
+                            <a href="{% url 'update_user' user.id %}" class="btn btn-sm btn-success">Edit</a>
+                            <a href="{% url 'hapus_pengguna' user.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Hapus akun ini?')">Hapus</a>
                         </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="3" class="text-center">Anda belum mengunggah dokumen.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+
+            <nav>
+                <ul class="pagination justify-content-center">
+                    {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">&laquo; First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+            
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ users.number }} of {{ users.paginator.num_pages }}</span>
+                    </li>
+            
+                    {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ users.paginator.num_pages }}">Last &raquo;</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>            
+            
         </div>
 
     </div>

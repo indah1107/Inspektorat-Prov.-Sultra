@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 
 
 def login_view(request):
@@ -46,14 +47,18 @@ def dashboard(request):
     return render(request, 'dashboard.html')
 
 @login_required(login_url='login')
+@user_passes_test(is_admin, login_url='dashboard')
 def admin_dashboard(request):
     if not request.user.is_staff:
         return redirect('dashboard')  # Cegah akses jika bukan admin
 
-    # Ambil semua user untuk manajemen akun
-    users = User.objects.all()
-    # dokumen_list = Dokumen.objects.all()
+    users_list = User.objects.all().order_by('-is_staff')  # Urutkan admin ke atas
+    paginator = Paginator(users_list, 10)  # 10 akun per halaman
+
+    page_number = request.GET.get('page')  # Ambil nomor halaman dari URL
+    users = paginator.get_page(page_number)
     return render(request, 'admin_dashboard.html', {'users': users})
+
 
 def register_view(request):
     if request.method == "POST":

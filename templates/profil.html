@@ -18,7 +18,7 @@
     </script>
 </head>
 <body>
-        <!-- Navbar -->
+    <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
         <div class="container-fluid">
             <!-- Logo dan Nama Website di Kiri -->
@@ -42,7 +42,7 @@
                         <a class="nav-link bi bi-person-circle" href="{% url 'profil' %}"> Profil</a>
                     </li>
                     <li class="nav-item me-5">
-                        <a class="nav-link bi bi-box-arrow-right" href="{% url 'logout' %}" onclick="confirmLogout(event)"> Logout</a>
+                        <a class="nav-link text-danger bi bi-box-arrow-right" href="{% url 'logout' %}" onclick="confirmLogout(event)"> Logout</a>
                     </li>
                 </ul>
             </div>

@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import (
     unggah_dokumen, daftar_dokumen, unggah_laporan, 
-    detail_dokumen, unduh_laporan, unduh_surat_tugas, ekspor_excel, create_user, update_user
+    detail_dokumen, unduh_laporan, unduh_surat_tugas, ekspor_excel, create_user, update_user,  daftar_dokumen_admin, hapus_surat_tugas, hapus_laporan
 )
 
 urlpatterns = [
@@ -33,4 +33,8 @@ urlpatterns = [
 
     path('admin/create-user/', create_user, name='create_user'),
     path('admin/update-user/<int:user_id>/', update_user, name='update_user'),
+
+    path('admin/dokumen/', daftar_dokumen_admin, name='admin_daftar_dokumen'),
+    path('admin/dokumen/hapus_surat/<int:dokumen_id>/', hapus_surat_tugas, name='hapus_surat_tugas'),
+
 ]

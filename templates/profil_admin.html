@@ -19,35 +19,35 @@
 </head>
 <body>
         <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
-        <div class="container-fluid">
-            <!-- Logo dan Nama Website di Kiri -->
-            <a class="navbar-brand d-flex align-items-center" href="#">
-                <img src="{% static 'images/logo.png' %}" alt="Logo" height="60" class="me-4">
-                <h2>Inspektorat Provinsi Sulawesi Tenggara</h2>
-            </a>
-            
-            <!-- Toggle Button untuk Mobile -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <!-- Menu Navigasi di Kanan -->
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item me-5">
-                        <a class="nav-link bi bi-house-door" href="{% url 'admin_dashboard' %}"> Home</a>
-                    </li>
-                    <li class="nav-item me-5">
-                        <a class="nav-link bi bi-person-circle" href="{% url 'profil_admin' %}"> Profil</a>
-                    </li>
-                    <li class="nav-item me-5">
-                        <a class="nav-link bi bi-box-arrow-right" href="{% url 'logout' %}" onclick="confirmLogout(event)"> Logout</a>
-                    </li>
-                </ul>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark py-3">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="#">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" height="60" class="me-3">
+                    <h2 class="mb-0">Inspektorat Provinsi Sulawesi Tenggara</h2>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <li class="nav-item me-4">
+                            <a class="nav-link" href="{% url 'admin_dashboard' %}"><i class="bi bi-house-door"></i> Home</a>
+                        </li>
+                        <li class="nav-item me-4">
+                            <a class="nav-link" href="{% url 'profil_admin' %}"><i class="bi bi-person-circle"></i> Profil</a>
+                        </li>
+                        <li class="nav-item me-4">
+                            <a class="nav-link" href="{% url 'admin_daftar_dokumen' %}"><i class="bi bi-person-circle"></i> Dokumen</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{% url 'logout' %}" onclick="confirmLogout(event)">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
     <div class="container mt-5">
         <h2 class="mb-4">Profil Admin</h2>
 
