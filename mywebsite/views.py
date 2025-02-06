@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from dokumen.models import Dokumen
 
 
 def login_view(request):
@@ -15,9 +16,9 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            if user.is_staff:  # Jika admin, arahkan ke halaman admin
+            if user.is_staff:  
                 return redirect('admin_dashboard')
-            else:  # Jika pengguna biasa, arahkan ke dashboard
+            else:  
                 return redirect('dashboard')
         else:
             messages.error(request, "Username atau password salah!")
@@ -28,34 +29,34 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
-@login_required  # Pastikan hanya pengguna yang sudah login bisa mengakses profil
+@login_required
 def profil(request):
-    user = request.user  # Mengambil informasi pengguna yang sedang login
+    user = request.user
     return render(request, 'profil.html', {'user': user})
 
 def is_admin(user):
     return user.is_staff or user.is_superuser
 
 @login_required(login_url='login')
-@user_passes_test(is_admin, login_url='dashboard')  # Redirect jika bukan admin
+@user_passes_test(is_admin, login_url='dashboard')
 def profil_admin(request):
     return render(request, 'profil_admin.html', {'user': request.user})
 
 @login_required(login_url='login')
 def dashboard(request):
-    # dokumen_list = Dokumen.objects.filter(pengirim=request.user)
+    dokumen_list = Dokumen.objects.filter(user=request.user)
     return render(request, 'dashboard.html')
 
 @login_required(login_url='login')
 @user_passes_test(is_admin, login_url='dashboard')
 def admin_dashboard(request):
     if not request.user.is_staff:
-        return redirect('dashboard')  # Cegah akses jika bukan admin
+        return redirect('dashboard') 
 
-    users_list = User.objects.all().order_by('-is_staff')  # Urutkan admin ke atas
-    paginator = Paginator(users_list, 10)  # 10 akun per halaman
+    users_list = User.objects.all().order_by('-is_staff') 
+    paginator = Paginator(users_list, 10)
 
-    page_number = request.GET.get('page')  # Ambil nomor halaman dari URL
+    page_number = request.GET.get('page')
     users = paginator.get_page(page_number)
     return render(request, 'admin_dashboard.html', {'users': users})
 
@@ -79,7 +80,7 @@ def register_view(request):
                 user = User.objects.create_user(username=username, email=email, password=password)
                 user.first_name = first_name
                 user.last_name = last_name
-                user.save()  # Pastikan dipanggil setelah mengatur first_name dan last_name
+                user.save()  
 
                 messages.success(request, "Pendaftaran berhasil! Silakan login.")
                 return redirect('login')

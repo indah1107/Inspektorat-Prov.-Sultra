@@ -1,18 +1,12 @@
 import os
-import time
-import threading
-import webview
+import sys
+from django.core.management import execute_from_command_line
 
-def run_django():
-    os.system("python manage.py runserver 127.0.0.1:8000")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Inspektorat-Prov.-Sultra.settings")
 
-# Jalankan server Django di thread terpisah
-django_thread = threading.Thread(target=run_django, daemon=True)
-django_thread.start()
+def main():
+    execute_from_command_line(["manage.py", "runserver", "0.0.0.0:8000"])
 
-# Tunggu server Django siap (beri waktu untuk start)
-time.sleep(3)
+if __name__ == "__main__":
+    main()
 
-# Buka aplikasi dalam jendela PyWebView
-webview.create_window("Aplikasi Django", "http://127.0.0.1:8000")
-webview.start()

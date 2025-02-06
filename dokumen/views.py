@@ -8,51 +8,55 @@ from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 import json
 
-# ✅ UNGGAH SURAT TUGAS
+
+@login_required(login_url='login')
+def dashboard(request):
+    return render(request, 'dashboard.html')
+
 def unggah_dokumen(request):
     if request.method == "POST":
         form = DokumenForm(request.POST, request.FILES)
         if form.is_valid():
+            
             try:
                 form.save()
                 messages.success(request, "Dokumen berhasil diunggah.")
                 return redirect("unggah_dokumen")
             except IntegrityError:
                 messages.error(request, "Nomor surat sudah digunakan. Gunakan nomor yang berbeda.")
-
+            
             dokumen = form.save(commit=False)
+            dokumen.user = request.user
 
-            # 🔹 Konversi data tim_audit ke JSON jika dikirim sebagai string JSON
             tim_audit_data = request.POST.get("tim_audit")
             if tim_audit_data:
                 try:
                     dokumen.tim_audit = json.loads(tim_audit_data)
                 except json.JSONDecodeError:
-                    dokumen.tim_audit = []  # Jika gagal, set default kosong
+                    dokumen.tim_audit = []
 
             dokumen.save()
             messages.success(request, "Surat Tugas berhasil diunggah.")
             return redirect("dashboard")
         else:
-            print("Form Errors:", form.errors)  # Debug error
+            print("Form Errors:", form.errors)
             messages.error(request, "Terjadi kesalahan, pastikan semua data telah diisi dengan benar.")
     else:
         form = DokumenForm()
 
     return render(request, "dokumen/unggah_dokumen.html", {"form": form})
 
-# ✅ UNGGAH & UPDATE LAPORAN
+
 def unggah_laporan(request, dokumen_id):
     dokumen = get_object_or_404(Dokumen, id=dokumen_id)
 
-    # Cek apakah laporan sudah ada untuk dokumen ini, jika tidak, buat baru
     laporan, created = Laporan.objects.get_or_create(dokumen=dokumen)
 
     if request.method == "POST":
         form = LaporanForm(request.POST, request.FILES, instance=laporan, dokumen=dokumen)
         if form.is_valid():
             form.save()
-            dokumen.status = "Sudah Diunggah"  # ✅ Perbarui status dokumen
+            dokumen.status = "Sudah Diunggah"
             dokumen.save()
             messages.success(request, "Laporan berhasil diperbarui!")
             return redirect("daftar_dokumen")
@@ -63,57 +67,56 @@ def unggah_laporan(request, dokumen_id):
 
     return render(request, "dokumen/unggah_laporan.html", {"form": form, "dokumen": dokumen})
 
-# ✅ MENAMPILKAN DAFTAR DOKUMEN (DENGAN PAGINASI & PENCARIAN)
-def daftar_dokumen(request):
-    """Menampilkan daftar dokumen dengan pencarian & paginasi."""
-    nomor_surat_query = request.GET.get("nomor_surat", "")
-    tanggal_surat_query = request.GET.get("tanggal_surat", "")
-    irban_query = request.GET.get("irban", "")
 
-    # Filter pencarian
-    dokumen_list = Dokumen.objects.select_related("laporan").all()
-    
-    if nomor_surat_query:
-        dokumen_list = dokumen_list.filter(nomor_surat__icontains=nomor_surat_query)
-    if tanggal_surat_query:
-        dokumen_list = dokumen_list.filter(tanggal_surat=tanggal_surat_query)
-    if irban_query:
-        dokumen_list = dokumen_list.filter(irban__icontains=irban_query)  # ✅ Perbaiki pencarian irban
+@login_required(login_url='login')
+def unggah_dokumen(request):
+    if request.method == "POST":
+        form = DokumenForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                dokumen = form.save(commit=False) 
+                dokumen.user = request.user  
+                dokumen.save()
 
-    # 🔹 Urutkan dokumen terbaru ke atas
-    dokumen_list = dokumen_list.order_by("-tanggal_surat", "-id")
+                tim_audit_data = request.POST.get("tim_audit")
+                if tim_audit_data:
+                    try:
+                        dokumen.tim_audit = json.loads(tim_audit_data)
+                    except json.JSONDecodeError:
+                        dokumen.tim_audit = []
+                    dokumen.save()
+                
+                messages.success(request, "Surat Tugas berhasil diunggah.")
+                return redirect("dashboard")
+            except IntegrityError:
+                messages.error(request, "Nomor surat sudah digunakan. Gunakan nomor yang berbeda.")
+        else:
+            print("Form Errors:", form.errors)
+            messages.error(request, "Terjadi kesalahan, pastikan semua data telah diisi dengan benar.")
+    else:
+        form = DokumenForm()
 
-    # 🔹 PAGINASI: Batasi hanya 10 dokumen per halaman
-    paginator = Paginator(dokumen_list, 10)
-    page_number = request.GET.get("page")
+    return render(request, "dokumen/unggah_dokumen.html", {"form": form})
 
-    try:
-        dokumen_page = paginator.page(page_number)
-    except (EmptyPage, PageNotAnInteger):
-        dokumen_page = paginator.page(1)  # Jika error, kembali ke halaman pertama
 
-    return render(request, "dokumen/daftar_dokumen.html", {"dokumen_list": dokumen_page})
-
-# ✅ MENAMPILKAN DETAIL DOKUMEN
 @login_required
 def detail_dokumen(request, dokumen_id):
     dokumen = get_object_or_404(Dokumen, pk=dokumen_id)
-    laporan = Laporan.objects.filter(dokumen=dokumen).first()  # Jika laporan ada
+    laporan = Laporan.objects.filter(dokumen=dokumen).first()
 
-    print("Tim Audit yang dikirim ke template:", dokumen.tim_audit)  # Debugging
+    print("Tim Audit yang dikirim ke template:", dokumen.tim_audit)
 
-    # Cek dari mana user datang
     next_page = request.GET.get("next", request.META.get("HTTP_REFERER", "/"))
 
     return render(request, "dokumen/detail_dokumen.html", {
         "dokumen": dokumen,
         "laporan": laporan,
-        "next_page": next_page,  # Kirim ke template
+        "next_page": next_page,
     })
 
-# ✅ MENGUNDUH SURAT TUGAS
+
 def unduh_surat_tugas(request, dokumen_id):
-    """Mengunduh file surat tugas."""
+    
     dokumen = get_object_or_404(Dokumen, id=dokumen_id)
 
     if not dokumen.file or not dokumen.file.name:
@@ -122,9 +125,8 @@ def unduh_surat_tugas(request, dokumen_id):
 
     return FileResponse(dokumen.file.open("rb"), as_attachment=True)
 
-# ✅ MENGUNDUH LAPORAN
 def unduh_laporan(request, laporan_id):
-    """Mengunduh file laporan."""
+    
     laporan = get_object_or_404(Laporan, id=laporan_id)
 
     if not laporan.file or not laporan.file.name:
@@ -136,10 +138,10 @@ def unduh_laporan(request, laporan_id):
 import pandas as pd
 from django.http import HttpResponse
 from django.utils.timezone import now, timedelta
-from .models import Dokumen, Laporan  # Pastikan model Laporan diimpor jika ada
+from .models import Dokumen, Laporan
 
 def ekspor_excel(request, rentang):
-    # Hitung rentang waktu
+    
     today = now().date()
     if rentang == "minggu":
         start_date = today - timedelta(days=7)
@@ -150,7 +152,6 @@ def ekspor_excel(request, rentang):
     else:
         return HttpResponse("Rentang waktu tidak valid.", status=400)
 
-    # Ambil dokumen yang memiliki Surat Tugas dan Laporan dalam rentang waktu tertentu
     dokumen_list = Dokumen.objects.filter(
         tanggal_surat__gte=start_date,
         file__isnull=False,
@@ -160,22 +161,21 @@ def ekspor_excel(request, rentang):
     if not dokumen_list.exists():
         return HttpResponse("Tidak ada dokumen yang memenuhi kriteria.", status=404)
 
-    # Buat DataFrame Pandas
     data = []
     for dokumen in dokumen_list:
         laporan = Laporan.objects.filter(dokumen=dokumen).first()
 
-        # Konversi Tim Audit dari list ke string yang mudah dibaca
-        if isinstance(dokumen.tim_audit, list):  # Jika tersimpan sebagai list
+
+        if isinstance(dokumen.tim_audit, list):
             tim_audit_str = ", ".join([f"{t['nama']} - {t['jabatan']}" for t in dokumen.tim_audit])
         else:
-            tim_audit_str = str(dokumen.tim_audit)  # Jika bukan list, langsung ubah ke string
+            tim_audit_str = str(dokumen.tim_audit)
 
         data.append({
             "Nomor Surat": dokumen.nomor_surat,
             "Tanggal Surat": dokumen.tanggal_surat.strftime("%d-%m-%Y"),
             "Irban": dokumen.irban,
-            "Tim Audit": tim_audit_str,  # ✅ Perbaikan disini
+            "Tim Audit": tim_audit_str,
             "Uraian": dokumen.uraian,
             "Nomor Laporan": laporan.nomor_laporan if laporan else "-",
             "Tanggal Laporan": laporan.tanggal_laporan.strftime("%d-%m-%Y") if laporan else "-",
@@ -184,7 +184,7 @@ def ekspor_excel(request, rentang):
 
     df = pd.DataFrame(data)
 
-    # Simpan ke response sebagai file Excel
+
     response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     response["Content-Disposition"] = f'attachment; filename="dokumen_{rentang}.xlsx"'
 
@@ -198,7 +198,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from .models import Dokumen  # Pastikan model Dokumen sudah di-import
+from .models import Dokumen 
 
 def login_view(request):
     if request.method == "POST":
@@ -209,9 +209,9 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            if user.is_superuser or user.is_staff:  # Superuser & Admin ke admin_dashboard
+            if user.is_superuser or user.is_staff:
                 return redirect('admin_dashboard')
-            else:  # Pengguna biasa ke dashboard
+            else:
                 return redirect('dashboard')
         else:
             messages.error(request, "Username atau password salah!")
@@ -227,15 +227,12 @@ def profil(request):
     user = request.user
     return render(request, 'profil.html', {'user': user})
 
-@login_required(login_url='login')
-def dashboard(request):
-    dokumen_list = Dokumen.objects.filter(pengirim=request.user)
-    return render(request, 'dashboard.html')
+
 
 @login_required(login_url='login')
 def admin_dashboard(request):
     if not request.user.is_staff and not request.user.is_superuser:
-        return redirect('dashboard')  # Cegah akses jika bukan admin
+        return redirect('dashboard')  
 
     users = User.objects.all()
     dokumen_list = Dokumen.objects.all() 
@@ -262,7 +259,7 @@ def register_view(request):
 
     return render(request, 'register.html')
 
-# Cek apakah user adalah admin
+
 def is_admin(user):
     return user.is_superuser or user.is_staff
 
@@ -283,7 +280,7 @@ def create_user(request):
         username = request.POST['username']
         email = request.POST['email']
         password = request.POST['password']
-        is_staff = request.POST.get('is_staff', False) == "on"  # Checkbox untuk admin
+        is_staff = request.POST.get('is_staff', False) == "on" 
 
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username sudah digunakan.")
@@ -293,7 +290,7 @@ def create_user(request):
             user = User.objects.create_user(username=username, email=email, password=password)
             user.first_name = first_name
             user.last_name = last_name
-            user.is_staff = is_staff  # Tandai sebagai admin jika dipilih
+            user.is_staff = is_staff
             user.save()
             messages.success(request, "Akun berhasil dibuat!")
             return redirect('admin_dashboard')
@@ -324,6 +321,12 @@ def update_user(request, user_id):
 
     return render(request, 'dokumen/update_user.html', {'user': user})
 
+@login_required(login_url='login')
+def daftar_dokumen(request):
+    dokumen_list = Dokumen.objects.filter(user=request.user)
+    return render(request, 'dokumen/daftar_dokumen.html', {'dokumen_list': dokumen_list})
+
+@user_passes_test(is_admin)
 def daftar_dokumen_admin(request):
 
     nomor_surat_query = request.GET.get("nomor_surat", "")
@@ -338,19 +341,18 @@ def daftar_dokumen_admin(request):
     if tanggal_surat_query:
         dokumen_list = dokumen_list.filter(tanggal_surat=tanggal_surat_query)
     if irban_query:
-        dokumen_list = dokumen_list.filter(irban__icontains=irban_query)  # ✅ Perbaiki pencarian irban
+        dokumen_list = dokumen_list.filter(irban__icontains=irban_query)
 
-    # 🔹 Urutkan dokumen terbaru ke atas
     dokumen_list = dokumen_list.order_by("-tanggal_surat", "-id")
 
-    # 🔹 PAGINASI: Batasi hanya 10 dokumen per halaman
+
     paginator = Paginator(dokumen_list, 10)
     page_number = request.GET.get("page")
 
     try:
         dokumen_page = paginator.page(page_number)
     except (EmptyPage, PageNotAnInteger):
-        dokumen_page = paginator.page(1)  # Jika error, kembali ke halaman pertama
+        dokumen_page = paginator.page(1)
 
     return render(request, 'dokumen/daftar_dokumen_admin.html', {'dokumen_list': dokumen_list})
 
@@ -359,6 +361,7 @@ def hapus_surat_tugas(request, dokumen_id):
     dokumen.delete()
     return redirect('daftar_dokumen_admin')
 
+@user_passes_test(is_admin)
 def hapus_laporan(request, laporan_id):
     laporan = get_object_or_404(Laporan, id=laporan_id)
     laporan.delete()

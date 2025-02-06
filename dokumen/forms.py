@@ -1,6 +1,6 @@
 from django import forms
 from .models import Dokumen, Laporan
-import json  # Untuk memproses data JSON
+import json
 
 class DokumenForm(forms.ModelForm):
     IRBAN_CHOICES = [
@@ -12,7 +12,7 @@ class DokumenForm(forms.ModelForm):
     ]
 
     irban = forms.ChoiceField(choices=IRBAN_CHOICES, widget=forms.Select(attrs={"class": "form-control"}))
-    tim_audit = forms.CharField(widget=forms.HiddenInput(), required=False)  # Data JSON dari JavaScript
+    tim_audit = forms.CharField(widget=forms.HiddenInput(), required=False) 
 
     class Meta:
         model = Dokumen
@@ -28,7 +28,7 @@ class DokumenForm(forms.ModelForm):
         tim_audit_data = self.cleaned_data.get("tim_audit")
         try:
             if tim_audit_data:
-                return json.loads(tim_audit_data)  # Konversi dari string ke JSON
+                return json.loads(tim_audit_data)
             return []
         except json.JSONDecodeError:
             raise forms.ValidationError("Format data tim audit tidak valid.")
@@ -41,14 +41,14 @@ class LaporanForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         """Pastikan dokumen terhubung dengan laporan"""
-        self.dokumen_instance = kwargs.pop('dokumen', None)  # Ambil dokumen yang dikirim dari view
+        self.dokumen_instance = kwargs.pop('dokumen', None)
         super().__init__(*args, **kwargs)
 
     def save(self, commit=True):
         """Gabungkan data laporan dengan dokumen sebelum menyimpan."""
         laporan = super().save(commit=False)
         if self.dokumen_instance:
-            laporan.dokumen = self.dokumen_instance  # Hubungkan laporan dengan dokumen yang sedang diunggah
+            laporan.dokumen = self.dokumen_instance
         if commit:
             laporan.save()
         return laporan
