@@ -28,7 +28,7 @@ class Laporan(models.Model):
     judul_laporan = models.CharField(max_length=255)
     tanggal_laporan = models.DateField(default=now)
     nomor_laporan = models.CharField(max_length=100)
-    keterangan = models.CharField(max_length=100)
+    tanggal_masuk_surat = models.DateField(null=True, blank=True)
     file = models.FileField(upload_to="laporan/")
 
     def __str__(self):

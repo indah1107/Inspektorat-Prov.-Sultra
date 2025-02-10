@@ -2,12 +2,14 @@ from django.urls import path
 from . import views
 from .views import (
     unggah_dokumen, daftar_dokumen, unggah_laporan, 
-    detail_dokumen, unduh_laporan, unduh_surat_tugas, ekspor_excel, create_user, update_user,  daftar_dokumen_admin, hapus_surat_tugas, hapus_laporan
+    detail_dokumen, unduh_laporan, unduh_surat_tugas, ekspor_excel, create_user, update_user,  daftar_dokumen_admin,
 )
 
 urlpatterns = [
-
-    path("ekspor/<str:rentang>/", ekspor_excel, name="ekspor_excel"),
+    path('daftar_dokumen/', views.daftar_dokumen, name='daftar_dokumen'),
+    path('ekspor_excel/', views.ekspor_excel, name='ekspor_excel'),
+    path('dokumen/ekspor/', views.ekspor_excel, name='ekspor_excel'),
+    path('dokumen/ekspor/<str:rentang>/', views.ekspor_excel, name='ekspor_excel'),
     path("dokumen/daftar/", daftar_dokumen, name="daftar_dokumen"),
     path("dokumen/<int:dokumen_id>/detail/", detail_dokumen, name="detail_dokumen"),
     path("unggah/", unggah_dokumen, name="unggah_dokumen"),
@@ -20,6 +22,5 @@ urlpatterns = [
     path('admin/create-user/', create_user, name='create_user'),
     path('admin/update-user/<int:user_id>/', update_user, name='update_user'),
     path('admin/dokumen/', daftar_dokumen_admin, name='admin_daftar_dokumen'),
-    path('admin/dokumen/hapus_surat/<int:dokumen_id>/', hapus_surat_tugas, name='hapus_surat_tugas'),
 
 ]

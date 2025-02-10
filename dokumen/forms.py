@@ -37,7 +37,7 @@ class DokumenForm(forms.ModelForm):
 class LaporanForm(forms.ModelForm):
     class Meta:
         model = Laporan
-        fields = ['judul_laporan', 'tanggal_laporan', 'nomor_laporan', 'keterangan', 'file']
+        fields = ['judul_laporan', 'tanggal_laporan', 'nomor_laporan', 'tanggal_masuk_surat', 'file']
 
     def __init__(self, *args, **kwargs):
         """Pastikan dokumen terhubung dengan laporan"""
