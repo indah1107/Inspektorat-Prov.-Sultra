@@ -10,6 +10,13 @@
 <body>
 
     <div class="container mt-5">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         <h2 class="mb-4">Daftar Dokumen (Admin)</h2>
 
         <!-- Formulir Pencarian -->
@@ -38,22 +45,22 @@
         </form>
     
         <table class="table table-bordered table-striped">
-            <thead class="thead-dark">
+            <thead class="thead-dark table-dark text-center align-middle">
                 <tr>
-                    <th>No</th>
                     <th>Nomor Surat</th>
                     <th>Tanggal Surat</th>
                     <th>Irban</th>
                     <th>Pengunggah</th>
                     <th>Tanggal Unggah Dokumen</th>
                     <th>Tanggal Unggah Laporan</th>
+                    <th>Laporan</th>
+                    <th>Batas Unggah Laporan</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for dokumen in dokumen_list %}
                 <tr>
-                    <td>{{ forloop.counter }}</td>
                     <td>{{ dokumen.nomor_surat }}</td>
                     <td>{{ dokumen.tanggal_surat }}</td>
                     <td>{{ dokumen.irban }}</td>
@@ -66,6 +73,30 @@
                             -
                         {% endif %}
                     </td>
+                    <td>
+                        {% if dokumen.laporan and dokumen.laporan.file %}
+                            <span class="badge bg-success">Sudah diunggah</span>
+                        {% else %}
+                            <span class="badge bg-danger">Belum diunggah</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if dokumen.laporan %}
+                            {% if dokumen.batas_waktu < today %}
+                                <span class="badge bg-danger">Terlambat</span>
+                                <br>
+                                {{ dokumen.laporan.tanggal_laporan|date:"d-m-Y" }}
+                            {% else %}
+                                <span class="badge bg-success">Tepat Waktu</span>
+                                <br>
+                                {{ dokumen.laporan.tanggal_laporan|date:"d-m-Y" }}
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-warning">Belum Diunggah</span>
+                            <br>
+                            {{ dokumen.batas_waktu|date:"d-m-Y" }}
+                        {% endif %}
+                    </td>     
                     <td>
                         <a href="{% url 'detail_dokumen' dokumen.id %}" class="btn btn-info btn-sm">Detail</a>
                         <a href="{% url 'unduh_surat_tugas' dokumen.id %}" class="btn btn-success btn-sm">Unduh Surat</a>
@@ -80,17 +111,7 @@
                     <td colspan="10" class="text-center">Tidak ada dokumen tersedia.</td>
                 </tr>
                 {% endfor %}
-                {% if messages %}
-                {% for message in messages %}
-                    <div class="alert 
-                        {% if message.tags == 'error' %}alert-danger
-                        {% elif message.tags == 'success' %}alert-success
-                        {% else %}alert-info{% endif %} " role="alert">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-                {% for message in messages %}{% endfor %}
-            {% endif %}
+               
             </tbody>
         </table>
 

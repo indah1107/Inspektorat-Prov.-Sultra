@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 from django.contrib.auth.models import User
+from datetime import timedelta
 
 class Dokumen(models.Model):
     IRBAN_CHOICES = [
@@ -12,12 +13,16 @@ class Dokumen(models.Model):
     ]
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     nomor_surat = models.CharField(max_length=100, unique=True)
-    tanggal_surat = models.DateField()
     irban = models.CharField(max_length=20, choices=IRBAN_CHOICES)
     tim_audit = models.JSONField(default=list)
     uraian = models.CharField(max_length=255)
     file = models.FileField(upload_to="dokumen/")
     created_at = models.DateTimeField(auto_now_add=True)
+    laporan_diunggah = models.BooleanField(default=False)
+    tanggal_surat = models.DateField()
+    @property
+    def batas_waktu(self):
+        return self.tanggal_surat + timedelta(days=14)
     
     def __str__(self):
         return f"{self.nomor_surat} - {self.irban}"

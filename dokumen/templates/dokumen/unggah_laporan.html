@@ -21,7 +21,15 @@
 </head>
 <body>
     <div class="container mt-5">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-success{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
         <h3>Unggah Laporan</h3>
+        <p class="mb-3 mt-3"><strong>Note :</strong> saat memasuki halaman upload laporan wajib di isi! jika terjadi kesalahan, silakan update kembali</p>
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
             
@@ -41,7 +49,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Tanggal Masuk Surat</label>
+                <label class="form-label">Tanggal Masuk Laporan</label>
                 <input type="date" class="form-control" name="tanggal_masuk_surat" required>
             </div> 
 
@@ -50,21 +58,9 @@
                 <input type="file" class="form-control" name="file" accept=".pdf" required onchange="cekFile(this)">
             </div>
             
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 mb-5">
                 <button type="submit" class="btn btn-primary">Unggah</button>
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Kembali</a>
             </div>
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert 
-                        {% if message.tags == 'error' %}alert-danger
-                        {% elif message.tags == 'success' %}alert-success
-                        {% else %}alert-info{% endif %} " role="alert">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-                {% for message in messages %}{% endfor %}
-            {% endif %}
         </form>
     </div>
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>

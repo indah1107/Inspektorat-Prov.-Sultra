@@ -19,6 +19,7 @@
         .content {
             flex: 1;
         }
+        
     </style>
     <script>
         function confirmLogout(event) {
@@ -141,14 +142,50 @@
             </nav>            
             
         </div>
-
+        <!-- Toast Container -->
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+            {% if dokumen_belum_diunggah %}
+                <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            Terdapat {{ dokumen_belum_diunggah.count }} laporan yang belum diunggah:
+                            <ul>
+                                {% for dokumen in dokumen_belum_diunggah %}
+                                    <li>{{ dokumen.nomor_surat }} - <a href="{% url 'admin_daftar_dokumen' %}" class="text-white">Lihat</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% else %}
+                <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            Semua laporan telah diunggah.
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
     </div>
     
     <footer class="bg-dark text-white text-center py-3 mt-auto">
         <p class="mb-0">&copy; 2025 Inspektorat Provinsi Sultra. All Rights Reserved.</p>
         <p class="mb-0">Directed by Ilmu Komputer UHO 2022</p>
     </footer>
-    
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastElList = document.querySelectorAll('.toast');
+            var toastList = [...toastElList].map(function (toastEl) {
+                return new bootstrap.Toast(toastEl, { delay: 5000 });
+            });
+            toastList.forEach(function (toast) {
+                toast.show();
+            });
+        });
+    </script>
 </body>
 </html>

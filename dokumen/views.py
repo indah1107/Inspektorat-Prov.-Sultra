@@ -6,27 +6,26 @@ from .models import Dokumen, Laporan
 from .forms import DokumenForm, LaporanForm
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
+from django.utils.timezone import now
 import json
-
-
-@login_required(login_url='login')
-def dashboard(request):
-    return render(request, 'dashboard.html')
 
 @login_required(login_url='login')
 def unggah_laporan(request, dokumen_id):
     dokumen = get_object_or_404(Dokumen, id=dokumen_id)
-
     laporan, created = Laporan.objects.get_or_create(dokumen=dokumen)
 
     if request.method == "POST":
         form = LaporanForm(request.POST, request.FILES, instance=laporan, dokumen=dokumen)
         if form.is_valid():
-            form.save()
-            dokumen.status = "Sudah Diunggah"
-            dokumen.save()
-            messages.success(request, "Laporan berhasil diperbarui!")
-            return redirect("daftar_dokumen")
+            if 'file' in request.FILES:
+                form.save()
+                dokumen.laporan_diunggah = True
+                dokumen.status = "Sudah Diunggah"
+                dokumen.save()
+                messages.success(request, "Laporan berhasil diperbarui!")
+                return redirect("daftar_dokumen")
+            else:
+                messages.error(request, "Anda harus mengunggah file laporan terlebih dahulu.")
         else:
             messages.error(request, "Terjadi kesalahan. Periksa kembali data yang Anda masukkan.")
     else:
@@ -54,7 +53,7 @@ def unggah_dokumen(request):
                     dokumen.save()
                 
                 messages.success(request, "Surat Tugas berhasil diunggah.")
-                return redirect("dashboard")
+                return redirect("daftar_dokumen")
             except IntegrityError:
                 messages.error(request, "Nomor surat sudah digunakan. Gunakan nomor yang berbeda.")
         else:
@@ -63,7 +62,7 @@ def unggah_dokumen(request):
     else:
         form = DokumenForm()
 
-    return render(request, "dokumen/unggah_dokumen.html", {"form": form})
+    return render(request, "dokumen/unggah_dokumen.html", {"form": form,})
 
 
 @login_required
@@ -103,50 +102,6 @@ def unduh_laporan(request, laporan_id):
 
     return FileResponse(laporan.file.open("rb"), as_attachment=True)
 
-# # views.py
-# from django.http import HttpResponse
-# from .models import Dokumen  # Pastikan model Dokumen sudah diimport
-
-# def ekspor_excel(request):
-#     tahun = request.GET.get('tahun')  # Ambil tahun dari GET request
-#     irban = request.GET.get('irban')  # Ambil irban dari GET request
-    
-#     # Filter dokumen berdasarkan tahun dan irban
-#     dokumen_list = Dokumen.objects.all()
-    
-#     if tahun:
-#         dokumen_list = dokumen_list.filter(tanggal_surat__year=tahun)
-    
-#     if irban:
-#         dokumen_list = dokumen_list.filter(irban=irban)
-    
-#     # Buat file Excel (misalnya menggunakan openpyxl atau library lain)
-#     import openpyxl
-#     from io import BytesIO
-
-#     wb = openpyxl.Workbook()
-#     ws = wb.active
-#     ws.append(["No Surat", "Tanggal Surat", "Irban", "Tim Audit", "Laporan"])
-
-#     for dokumen in dokumen_list:
-#         ws.append([
-#             dokumen.nomor_surat,
-#             dokumen.tanggal_surat,
-#             dokumen.irban,
-#             ", ".join([anggota.nama for anggota in dokumen.tim_audit.all()]),  # Asumsi ada relasi tim_audit
-#             dokumen.laporan.file if dokumen.laporan else "Belum diunggah",
-#         ])
-    
-#     # Simpan file Excel dalam memori
-#     file = BytesIO()
-#     wb.save(file)
-#     file.seek(0)
-
-#     # Kirim file Excel sebagai respons
-#     response = HttpResponse(file, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-#     response['Content-Disposition'] = 'attachment; filename=dokumen_tugas.xlsx'
-#     return response
-
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -182,16 +137,6 @@ def profil(request):
     user = request.user
     return render(request, 'profil.html', {'user': user})
 
-
-
-@login_required(login_url='login')
-def admin_dashboard(request):
-    if not request.user.is_staff and not request.user.is_superuser:
-        return redirect('dashboard')  
-
-    users = User.objects.all()
-    dokumen_list = Dokumen.objects.all() 
-    return render(request, 'admin_dashboard.html', {'users': users})
 
 def register_view(request):
     if request.method == "POST":
@@ -276,54 +221,6 @@ def update_user(request, user_id):
 
     return render(request, 'dokumen/update_user.html', {'user': user})
 
-# from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-# from django.shortcuts import render
-# from django.contrib.auth.decorators import login_required
-# from .models import Dokumen
-
-# @login_required(login_url='login')
-# def daftar_dokumen(request):
-#     # Mengambil data untuk pilihan tahun dan irban
-#     tahun_choices = Dokumen.objects.values('tanggal_surat__year').distinct()
-#     irban_choices = Dokumen.objects.values('irban').distinct()
-
-#     # Mendapatkan parameter pencarian dari GET request
-#     nomor_surat_query = request.GET.get("nomor_surat", "")
-#     tanggal_surat_query = request.GET.get("tanggal_surat", "")
-#     irban_query = request.GET.get("irban", "")
-
-#     # Filter dokumen berdasarkan user yang login
-#     dokumen_list = Dokumen.objects.filter(user=request.user)
-
-#     # Filter berdasarkan query jika ada
-#     if nomor_surat_query:
-#         dokumen_list = dokumen_list.filter(nomor_surat__icontains=nomor_surat_query)
-#     if tanggal_surat_query:
-#         dokumen_list = dokumen_list.filter(tanggal_surat=tanggal_surat_query)
-#     if irban_query:
-#         dokumen_list = dokumen_list.filter(irban__icontains=irban_query)
-
-#     # Mengurutkan dokumen
-#     dokumen_list = dokumen_list.order_by("-tanggal_surat", "-id")
-
-#     # Paginator untuk membagi dokumen dalam halaman
-#     paginator = Paginator(dokumen_list, 10)
-#     page_number = request.GET.get("page")
-
-#     try:
-#         dokumen_page = paginator.page(page_number)
-#     except (EmptyPage, PageNotAnInteger):
-#         dokumen_page = paginator.page(1)
-
-#     # Mengirim data ke template
-#     return render(request, 'dokumen/daftar_dokumen.html', {
-#         'dokumen_list': dokumen_page,
-#         'tahun_choices': tahun_choices,
-#         'irban_choices': irban_choices,
-#         'nomor_surat_query': nomor_surat_query,
-#         'tanggal_surat_query': tanggal_surat_query,
-#         'irban_query': irban_query
-#     })
 
 @user_passes_test(is_admin)
 def daftar_dokumen_admin(request):
@@ -360,12 +257,13 @@ def hapus_dokumen(request, dokumen_id):
     dokumen = get_object_or_404(Dokumen, id=dokumen_id)
     dokumen.delete()
     messages.success(request, "Dokumen berhasil dihapus.")
-    return redirect('admin_dashboard')
+    return redirect('admin_daftar_dokumen')
 
 from django.shortcuts import render
 from .models import Dokumen
 
 def daftar_dokumen(request):
+    today = now().date()
     nomor_surat_query = request.GET.get("nomor_surat", "")
     tahun_choices = Dokumen.objects.values_list('tanggal_surat__year', flat=True).distinct()
     irban_choices = Dokumen.objects.values_list('irban', flat=True).distinct()
@@ -383,6 +281,8 @@ def daftar_dokumen(request):
     if irban:
         dokumen_list = dokumen_list.filter(irban=irban)
 
+    dokumen_list = dokumen_list.order_by("-tanggal_surat", "-id")
+
     # Periksa output SQL yang dihasilkan
     print(dokumen_list.query)
 
@@ -390,24 +290,22 @@ def daftar_dokumen(request):
         'dokumen_list': dokumen_list,
         'tahun_choices': tahun_choices,
         'irban_choices': irban_choices,
+        'today': today,
     }
     
     return render(request, 'dokumen/daftar_dokumen.html', context)
 
 import openpyxl
+from openpyxl.styles import Font, Border, Side, Alignment
 from django.http import HttpResponse
 from .models import Dokumen
 
 def ekspor_excel(request):
     # Ambil data sesuai filter yang dipilih
-    tahun_choices = Dokumen.objects.values_list('tanggal_surat__year', flat=True).distinct()
-    irban_choices = Dokumen.objects.values_list('irban', flat=True).distinct()
-
     tahun = request.GET.get('tahun')
     irban = request.GET.get('irban')
 
     dokumen_list = Dokumen.objects.filter(user=request.user)
-
     if tahun:
         dokumen_list = dokumen_list.filter(tanggal_surat__year=tahun)
     if irban:
@@ -418,37 +316,69 @@ def ekspor_excel(request):
     ws = wb.active
     ws.title = "Daftar Dokumen"
 
-    # Menulis header kolom
+    # Gaya Border (garis tabel)
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
+                         top=Side(style='thin'), bottom=Side(style='thin'))
+
+    # Header kolom
     headers = [
-        'Nomor Surat', 'Tanggal Surat', 'Irban', 'Tim Audit', 
-        'Uraian', 'Nomor Laporan', 'Tanggal Laporan', 'Tanggal Masuk Surat'
+        'Nomor Surat', 'Tanggal Surat', 'Irban', 'Tim Audit (Nama & Jabatan)', 
+        'Uraian', 'Nomor Laporan', 'Tanggal Laporan', 'Tanggal Masuk Laporan'
     ]
     ws.append(headers)
 
-    # Menulis data dokumen
+    # Gaya header (Bold + Center + Border)
+    for col_num, col_name in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=col_name)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    row_num = 2  # Mulai dari baris kedua (baris pertama adalah header)
+
     for dokumen in dokumen_list:
-        # Mengambil data laporan terkait dokumen
         laporan = dokumen.laporan if hasattr(dokumen, 'laporan') else None
+
+        nomor_laporan = laporan.nomor_laporan if laporan else "-"
+        tanggal_laporan = laporan.tanggal_laporan.strftime('%d-%m-%Y') if laporan and laporan.tanggal_laporan else "-"
+        tanggal_masuk_surat = laporan.tanggal_masuk_surat.strftime('%d-%m-%Y') if laporan and laporan.tanggal_masuk_surat else "-"
+        tanggal_surat = dokumen.tanggal_surat.strftime('%d-%m-%Y') if dokumen.tanggal_surat else "-"
+
+        tim_audit_list = dokumen.tim_audit if dokumen.tim_audit else []
         
-        # Jika dokumen memiliki laporan, ambil informasi terkait
-        nomor_laporan = laporan.nomor_laporan if laporan else ''
-        tanggal_laporan = laporan.tanggal_laporan.strftime("%b. %d, %Y") if laporan else ''
-        tanggal_masuk_surat = laporan.tanggal_masuk_surat.strftime("%b. %d, %Y") if laporan and laporan.tanggal_masuk_surat else ''
+        # Jika ada anggota tim audit, gabungkan nama dan jabatan ke dalam satu sel (dengan format terurut ke bawah)
+        if tim_audit_list:
+            tim_audit_str = "\n".join([f"{item['nama']} - {item['jabatan']}" for item in tim_audit_list])
+        else:
+            tim_audit_str = "-"  # Jika tidak ada anggota tim audit
 
-        # Mengonversi tim_audit menjadi string
-        tim_audit_str = ', '.join([f"{item['nama']} ({item['jabatan']})" for item in dokumen.tim_audit])
-
-        row = [
+        row_data = [
             dokumen.nomor_surat,
-            dokumen.tanggal_surat.strftime("%b. %d, %Y"),  # Format tanggal
+            tanggal_surat,
             dokumen.irban,
-            tim_audit_str,  # Menulis tim_audit sebagai string
-            dokumen.uraian,  # Akses atribut uraian
-            nomor_laporan,  # Akses nomor_laporan dari Laporan
-            tanggal_laporan,  # Akses tanggal_laporan dari Laporan
-            tanggal_masuk_surat,  # Akses tanggal_masuk_surat dari Laporan
+            tim_audit_str,  # Format anggota tim audit ke bawah
+            dokumen.uraian,
+            nomor_laporan,
+            tanggal_laporan,
+            tanggal_masuk_surat,
         ]
-        ws.append(row)
+        ws.append(row_data)
+
+        # Terapkan border, format alignment (rata tengah), dan wrap text
+        for col_num in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_num, column=col_num)
+            cell.border = thin_border
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # Khusus untuk kolom "Tim Audit", teks tetap wrap text dengan posisi di atas
+        ws.cell(row=row_num, column=4).alignment = Alignment(horizontal="center", vertical="top", wrap_text=True)
+
+        row_num += 1  # Pindah ke baris berikutnya
+
+    # *Menyesuaikan lebar kolom secara otomatis agar data panjang tidak terpotong*
+    for col_num, col_name in enumerate(headers, 1):
+        max_length = max(len(str(ws.cell(row=row, column=col_num).value)) for row in range(1, row_num + 1))
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_num)].width = max(15, min(max_length + 5, 50))
 
     # Menyusun response untuk mendownload file Excel
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
